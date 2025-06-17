@@ -1,0 +1,26 @@
+WITH OverallAverage AS
+  (SELECT ROUND(AVG(UnitPrice), 2) AS OverallAvg
+   FROM InvoiceLine),
+     CustomerAverage AS
+  (SELECT g.Name,
+          cu.FirstName,
+          cu.LastName,
+          SUM(il.UnitPrice) TotalUnitAmt,
+          ROUND(AVG(il.UnitPrice), 2) CustAvg
+   FROM Invoice i
+   JOIN Customer cu ON i.CustomerId = cu.CustomerId
+   JOIN InvoiceLine il ON i.InvoiceId = il.InvoiceId
+   JOIN Track t ON il.TrackId = t.TrackId
+   JOIN Album al ON t.AlbumId = al.AlbumId
+   JOIN Genre g ON t.GenreId = g.GenreId
+   GROUP BY cu.LastName,
+            g.Name)
+SELECT c.Name,
+       COUNT(c.LastName) Customers,
+       SUM(c.TotalUnitAmt) UnitTotal,
+       ROUND(AVG(c.TotalUnitAmt), 2) AvgUnitTotal
+FROM OverallAverage o,
+     CustomerAverage c
+WHERE CustAvg>OverallAvg
+GROUP BY c.Name
+ORDER BY c.custavg DESC

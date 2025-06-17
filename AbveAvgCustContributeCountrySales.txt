@@ -1,0 +1,38 @@
+WITH OverallAverage AS
+  (SELECT ROUND(AVG(total), 2) AS OverallAvg
+   FROM Invoice),
+     CustomerAverage AS
+  (SELECT i.BillingCountry Country,
+          cu.FirstName,
+          cu.LastName,
+          SUM(i.total) TotalOrderAmt,
+          ROUND(AVG(i.total), 2) CustAvg
+   FROM Invoice i
+   JOIN Customer cu ON i.CustomerId = cu.CustomerId
+   GROUP BY cu.LastName),
+     AverageFilter AS
+  (SELECT ca.LastName LastName,
+          ca.Country,
+          ca.TotalOrderAmt
+   FROM OverallAverage o,
+        CustomerAverage ca
+   WHERE CustAvg > OverallAvg
+   GROUP BY LastName
+   ORDER BY ca.custavg DESC),
+     TotalCountrySales AS
+  (SELECT i.BillingCountry Country,
+          SUM(i.total) CountrySales
+   FROM Invoice i
+   GROUP BY i.BillingCountry),
+     AboveAvgCustCountrySales AS
+  (SELECT af.Country,
+          SUM(af.TotalOrderAmt) AboveAvgCustSales
+   FROM AverageFilter af
+   GROUP BY af.Country)
+SELECT tcs.Country,
+       aaccs.AboveAvgCustSales,
+       tcs.CountrySales,
+       ROUND((aaccs.AboveAvgCustSales / tcs.CountrySales)*100, 2) AboveAvgSalesPercent
+FROM AboveAvgCustCountrySales aaccs
+LEFT JOIN TotalCountrySales tcs ON tcs.Country = aaccs.Country
+ORDER BY tcs.Country

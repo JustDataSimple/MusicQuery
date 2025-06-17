@@ -1,0 +1,19 @@
+WITH OverallAverage AS
+  (SELECT ROUND(AVG(total), 2) AS OverallOrderAvg
+   FROM Invoice),
+     CustomerAverage AS
+  (SELECT cu.FirstName,
+          cu.LastName,
+          SUM(i.total) TotalOrderAmt,
+          ROUND(AVG(i.total), 2) CustOrderAvg
+   FROM Invoice i
+   JOIN Customer cu ON i.CustomerId = cu.CustomerId
+   GROUP BY cu.LastName)
+SELECT c.LastName,
+       c.TotalOrderAmt,
+       c.CustOrderAvg,
+       o.OverallOrderAvg
+FROM OverallAverage o,
+     CustomerAverage c
+WHERE CustOrderAvg>OverallOrderAvg
+ORDER BY c.CustOrderAvg DESC
